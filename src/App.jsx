@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import SplashScreen from './components/SplashScreen';
 import LoginPlaceholder from './components/LoginPlaceholder';
 import HomeDashboard from './components/HomeDashboard';
@@ -7,6 +7,7 @@ import TransportSearchScreen from './components/TransportSearchScreen';
 import ActivitiesSearchScreen from './components/ActivitiesSearchScreen';
 import TripPlannerScreen from './components/TripPlannerScreen';
 import TravelAssistantScreen from './components/TravelAssistantScreen';
+import { loadSavedTrips, persistSavedTrips, clearSavedTrips, STORAGE_KEY } from './services/storage';
 
 /**
  * TravelWise Root App Component
@@ -33,61 +34,24 @@ export default function App() {
     travellers: 2
   });
 
-  // Prototype saved stays, transport, and itineraries pre-seeded with sample bookings
-  const [savedTrips, setSavedTrips] = useState([
-    {
-      id: 'hotel-munnar-1',
-      hotelId: 'hotel-munnar-1',
-      itemType: 'hotel',
-      name: 'Tea Valley Cloud Resort & Spa',
-      destination: 'Munnar',
-      location: 'Chithirapuram, Munnar Hills',
-      image: '/munnar-tea.jpg',
-      pricePerNight: 4200,
-      nights: 3,
-      totalEstimatedPrice: 12600,
-      departureDate: '2026-10-15',
-      returnDate: '2026-10-18',
-      date: '2026-10-15',
-      travellers: 2
-    },
-    {
-      id: 'tr-vande-bharat-1',
-      itemType: 'transport',
-      transportType: 'Train',
-      name: 'Vande Bharat Express',
-      operator: 'Southern Railway (IRCTC)',
-      route: 'Kochi (Ernakulam Jn) → Munnar',
-      origin: 'Kochi (Ernakulam Jn)',
-      destination: 'Munnar',
-      departureTime: '07:05 AM',
-      arrivalTime: '07:55 AM',
-      duration: '50m',
-      fare: 480,
-      fareType: 'per-person',
-      totalEstimatedPrice: 960,
-      travellers: 2,
-      travelDate: '2026-10-15',
-      date: '2026-10-15'
-    },
-    {
-      id: 'act-tea-tour-1',
-      itemType: 'activity',
-      activityType: 'Plantation Tour',
-      name: 'Lockhart Tea Estate Heritage Walking Tour',
-      title: 'Lockhart Tea Estate Heritage Walking Tour',
-      location: 'Lockhart Estate, Munnar',
-      destination: 'Munnar',
-      image: '/munnar-tea.jpg',
-      duration: '3.5 hours',
-      pricePerPerson: 850,
-      fare: 850,
-      totalEstimatedPrice: 1700,
-      travellers: 2,
-      travelDate: '2026-10-16',
-      date: '2026-10-16'
-    }
-  ]);
+  // Phase 3 Persistence: Initialize savedTrips from browser localStorage
+  const [savedTrips, setSavedTrips] = useState(() => loadSavedTrips());
+
+  // Automatically persist savedTrips to localStorage whenever additions/removals occur
+  useEffect(() => {
+    persistSavedTrips(savedTrips);
+  }, [savedTrips]);
+
+  // Synchronize state across multiple browser tabs via standard storage events
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === STORAGE_KEY) {
+        setSavedTrips(loadSavedTrips());
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   // Handle successful prototype login / sign up
   const handleLoginSuccess = (userData) => {
@@ -175,9 +139,15 @@ export default function App() {
     });
   };
 
-  // Remove an item from prototype itinerary
+  // Remove an item from prototype itinerary and update localStorage
   const handleRemoveTripItem = (itemId) => {
     setSavedTrips((prev) => prev.filter((item) => (item.id || item.hotelId) !== itemId));
+  };
+
+  // Clear all items from itinerary and localStorage
+  const handleClearAllTrips = () => {
+    clearSavedTrips();
+    setSavedTrips([]);
   };
 
   return (
@@ -209,6 +179,8 @@ export default function App() {
           onOpenActivities={handleOpenActivities}
           onOpenPlanner={handleOpenPlanner}
           onOpenAssistant={handleOpenAssistant}
+          onRemoveItem={handleRemoveTripItem}
+          onClearAllTrips={handleClearAllTrips}
           onNavigateToLogin={() => setCurrentScreen('login')}
           onNavigateToSplash={() => setCurrentScreen('splash')}
         />
@@ -253,6 +225,7 @@ export default function App() {
           searchParams={searchParams}
           savedTrips={savedTrips}
           onRemoveItem={handleRemoveTripItem}
+          onClearAllTrips={handleClearAllTrips}
           onBackToDashboard={() => setCurrentScreen('dashboard')}
           onOpenHotels={handleOpenHotels}
           onOpenTransport={handleOpenTransport}

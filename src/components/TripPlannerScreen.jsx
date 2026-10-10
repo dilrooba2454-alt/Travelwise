@@ -11,6 +11,7 @@ import {
   Ship,
   Ticket,
   Trash2,
+  X,
   Plus,
   Sparkles,
   ShieldAlert,
@@ -42,6 +43,7 @@ export default function TripPlannerScreen({
   searchParams,
   savedTrips = [],
   onRemoveItem,
+  onClearAllTrips,
   onBackToDashboard,
   onOpenHotels,
   onOpenTransport,
@@ -55,6 +57,7 @@ export default function TripPlannerScreen({
 
   // UI toast feedback
   const [toastMessage, setToastMessage] = useState(null);
+  const [showClearModal, setShowClearModal] = useState(false);
 
   const showToast = (msg) => {
     setToastMessage(msg);
@@ -217,6 +220,24 @@ export default function TripPlannerScreen({
               <Share2 size={16} />
               <span>Share Trip</span>
             </button>
+
+            {savedTrips.length > 0 && (
+              <button
+                id="btn-planner-clear-all"
+                type="button"
+                className="btn-action-ghost"
+                style={{
+                  background: '#FEF2F2',
+                  color: '#EF4444',
+                  borderColor: '#FECACA'
+                }}
+                onClick={() => setShowClearModal(true)}
+                title="Clear all saved trips from itinerary"
+              >
+                <Trash2 size={16} />
+                <span>Clear All</span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -569,6 +590,51 @@ export default function TripPlannerScreen({
           </div>
         </aside>
       </main>
+
+      {/* Clear All Confirmation Modal Dialog */}
+      {showClearModal && (
+        <div className="modal-backdrop" onClick={() => setShowClearModal(false)}>
+          <div className="modal-window" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <div className="modal-icon-badge" style={{ background: '#FEE2E2' }}>
+                <Trash2 size={20} color="#EF4444" />
+              </div>
+              <h3 className="modal-title">Clear Itinerary?</h3>
+              <button type="button" className="btn-modal-close" onClick={() => setShowClearModal(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <p className="modal-description" style={{ margin: '14px 0 20px 0' }}>
+              Are you sure you want to remove all <strong>{savedTrips.length} saved bookings</strong>? This will clear your entire itinerary and remove all saved items from local storage.
+            </p>
+
+            <div className="modal-buttons-row">
+              <button
+                type="button"
+                className="btn-modal-cancel"
+                onClick={() => setShowClearModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                id="btn-confirm-clear-planner"
+                type="button"
+                className="btn-modal-danger"
+                onClick={() => {
+                  if (onClearAllTrips) {
+                    onClearAllTrips();
+                  }
+                  setShowClearModal(false);
+                  showToast('All itinerary items cleared.');
+                }}
+              >
+                Yes, Clear All
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

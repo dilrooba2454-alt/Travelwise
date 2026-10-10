@@ -21,7 +21,8 @@ import {
   Menu,
   X,
   Info,
-  ChevronRight
+  ChevronRight,
+  Trash2
 } from 'lucide-react';
 
 /**
@@ -46,6 +47,8 @@ export default function HomeDashboard({
   onOpenActivities,
   onOpenPlanner,
   onOpenAssistant,
+  onRemoveItem,
+  onClearAllTrips,
   initialSearchParams,
   savedTrips = []
 }) {
@@ -68,6 +71,7 @@ export default function HomeDashboard({
   // Interactive modal state for My Trips & Profile
   const [modalType, setModalType] = useState(null); // 'trips' | 'profile' | 'details' | null
   const [selectedItem, setSelectedItem] = useState(null);
+  const [confirmClearOpen, setConfirmClearOpen] = useState(false);
 
   // Popular Kerala Destinations mock dataset
   const popularDestinations = [
@@ -279,7 +283,7 @@ export default function HomeDashboard({
               >
                 <Calendar size={16} />
                 <span>My Trips</span>
-                <span className="nav-counter-pill">{2 + (savedTrips?.length || 0)}</span>
+                <span className="nav-counter-pill">{savedTrips?.length || 0}</span>
               </button>
             </li>
             <li>
@@ -387,7 +391,7 @@ export default function HomeDashboard({
               }}
             >
               <Calendar size={18} />
-              <span>My Trips ({2 + (savedTrips?.length || 0)} Saved)</span>
+              <span>My Trips ({savedTrips?.length || 0} Saved)</span>
             </button>
             <button
               type="button"
@@ -964,82 +968,216 @@ export default function HomeDashboard({
             </div>
 
             <div className="trips-modal-body">
-              <div className="trip-saved-card">
-                <div className="trip-saved-header">
-                  <strong>3-Day Munnar Hill Station Retreat</strong>
-                  <span className="badge-pill">Upcoming</span>
+              {(!savedTrips || savedTrips.length === 0) ? (
+                <div style={{ textAlign: 'center', padding: '28px 16px', background: '#F8FAFC', borderRadius: '12px', border: '1px dashed #CBD5E1' }}>
+                  <Compass size={36} color="#0866F5" style={{ margin: '0 auto 10px', display: 'block' }} />
+                  <h4 style={{ fontSize: '1rem', fontWeight: 700, color: '#102A56', marginBottom: '4px' }}>No Saved Trips Yet</h4>
+                  <p style={{ fontSize: '0.84rem', color: '#64748B', maxWidth: '320px', margin: '0 auto 16px' }}>
+                    You haven't saved any stays, transport options, or activities. Explore options to build and persist your itinerary!
+                  </p>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      className="btn-primary-action"
+                      style={{ padding: '8px 14px', fontSize: '0.82rem' }}
+                      onClick={() => {
+                        setModalType(null);
+                        if (onOpenHotels) onOpenHotels({ destination, departureDate, returnDate, travellers });
+                      }}
+                    >
+                      Explore Stays
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline-action"
+                      style={{ padding: '8px 14px', fontSize: '0.82rem' }}
+                      onClick={() => {
+                        setModalType(null);
+                        if (onOpenTransport) onOpenTransport({ destination, departureDate, returnDate, travellers });
+                      }}
+                    >
+                      Transport
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-outline-action"
+                      style={{ padding: '8px 14px', fontSize: '0.82rem' }}
+                      onClick={() => {
+                        setModalType(null);
+                        if (onOpenActivities) onOpenActivities({ destination, departureDate, returnDate, travellers });
+                      }}
+                    >
+                      Activities
+                    </button>
+                  </div>
                 </div>
-                <p className="trip-saved-dates">Oct 24 - Oct 27, 2026 • 2 Travellers</p>
-                <div className="trip-saved-features">
-                  <span>✓ Tea Valley Resort</span>
-                  <span>✓ Private SUV Chauffeur</span>
-                </div>
-              </div>
+              ) : (
+                <>
+                  {savedTrips.map((item, idx) => {
+                    let badgeBg = '#0866F5';
+                    let badgeText = 'Selected Stay';
+                    let datesText = `${item.departureDate} → ${item.returnDate} • ${item.travellers} Guests • ${item.nights} Nights`;
+                    let borderCol = '#93C5FD';
+                    let cardBg = '#F0F7FF';
 
-              <div className="trip-saved-card" style={{ marginTop: '12px' }}>
-                <div className="trip-saved-header">
-                  <strong>Alleppey Backwater Overnight Cruise</strong>
-                  <span className="badge-pill">Saved Draft</span>
-                </div>
-                <p className="trip-saved-dates">Nov 12 - Nov 14, 2026 • 2 Travellers</p>
-                <div className="trip-saved-features">
-                  <span>✓ Deluxe 1-Bedroom Houseboat</span>
-                  <span>✓ Kerala Chef Meals</span>
-                </div>
-              </div>
+                    if (item.itemType === 'transport') {
+                      badgeBg = '#10B981';
+                      badgeText = `Transport (${item.transportType})`;
+                      datesText = `${item.travelDate || item.date} • ${item.travellers} Travellers • ${item.duration || 'Direct'}`;
+                      borderCol = '#A7F3D0';
+                      cardBg = '#F0FDF4';
+                    } else if (item.itemType === 'activity') {
+                      badgeBg = '#8B5CF6';
+                      badgeText = `Activity (${item.activityType || 'Experience'})`;
+                      datesText = `${item.travelDate || item.date} • ${item.travellers} Participants • ${item.duration || 'Tour'}`;
+                      borderCol = '#DDD6FE';
+                      cardBg = '#F5F3FF';
+                    }
 
-              {/* Dynamically added stays, transport & activities from Screen 4, 5 & 6 */}
-              {savedTrips && savedTrips.map((item, idx) => {
-                let badgeBg = '#0866F5';
-                let badgeText = 'Selected Stay';
-                let datesText = `${item.departureDate} → ${item.returnDate} • ${item.travellers} Guests • ${item.nights} Nights`;
-                let borderCol = '#93C5FD';
-                let cardBg = '#F0F7FF';
-
-                if (item.itemType === 'transport') {
-                  badgeBg = '#10B981';
-                  badgeText = `Transport (${item.transportType})`;
-                  datesText = `${item.travelDate || item.date} • ${item.travellers} Travellers • ${item.duration || 'Direct'}`;
-                  borderCol = '#A7F3D0';
-                  cardBg = '#F0FDF4';
-                } else if (item.itemType === 'activity') {
-                  badgeBg = '#8B5CF6';
-                  badgeText = `Activity (${item.activityType || 'Experience'})`;
-                  datesText = `${item.travelDate || item.date} • ${item.travellers} Participants • ${item.duration || 'Tour'}`;
-                  borderCol = '#DDD6FE';
-                  cardBg = '#F5F3FF';
-                }
-
-                return (
-                  <div
-                    key={`saved-${idx}`}
-                    className="trip-saved-card"
-                    style={{
-                      marginTop: '12px',
-                      borderColor: borderCol,
-                      background: cardBg
-                    }}
-                  >
-                    <div className="trip-saved-header">
-                      <strong>{item.name || item.title}</strong>
-                      <span
-                        className="badge-pill"
+                    return (
+                      <div
+                        key={`saved-${idx}`}
+                        className="trip-saved-card"
                         style={{
-                          background: badgeBg,
-                          color: '#FFFFFF'
+                          marginTop: idx === 0 ? '0' : '12px',
+                          borderColor: borderCol,
+                          background: cardBg
                         }}
                       >
-                        {badgeText}
-                      </span>
-                    </div>
-                    <p className="trip-saved-dates">{datesText}</p>
-                    <div className="trip-saved-features">
-                      <span>✓ {item.route || item.location}</span>
-                      <span>✓ Est. Total: ₹{item.totalEstimatedPrice?.toLocaleString()}</span>
-                    </div>
+                        <div className="trip-saved-header">
+                          <strong>{item.name || item.title}</strong>
+                          <span
+                            className="badge-pill"
+                            style={{
+                              background: badgeBg,
+                              color: '#FFFFFF'
+                            }}
+                          >
+                            {badgeText}
+                          </span>
+                        </div>
+                        <p className="trip-saved-dates">{datesText}</p>
+                        <div className="trip-saved-features" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                          <div>
+                            <span>✓ {item.route || item.location}</span>
+                            <span style={{ marginLeft: '8px', color: '#0866F5' }}>
+                              Est: ₹{(item.totalEstimatedPrice || item.fare || item.price || 0).toLocaleString()}
+                            </span>
+                          </div>
+                          {onRemoveItem && (
+                            <button
+                              type="button"
+                              onClick={() => onRemoveItem(item.id || item.hotelId)}
+                              title="Remove item"
+                              style={{
+                                background: '#FEE2E2',
+                                border: 'none',
+                                color: '#EF4444',
+                                padding: '3px 8px',
+                                borderRadius: '4px',
+                                cursor: 'pointer',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                              }}
+                            >
+                              <Trash2 size={12} />
+                              <span>Remove</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Summary row */}
+                  <div style={{
+                    marginTop: '14px',
+                    padding: '10px 14px',
+                    background: '#EFF6FF',
+                    border: '1px solid #BFDBFE',
+                    borderRadius: '8px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1E40AF' }}>
+                      Estimated Total ({savedTrips.length} items):
+                    </span>
+                    <strong style={{ fontSize: '1rem', fontWeight: 800, color: '#0866F5' }}>
+                      ₹{savedTrips.reduce((acc, t) => acc + Number(t.totalEstimatedPrice || t.fare || t.price || 0), 0).toLocaleString()}
+                    </strong>
                   </div>
-                );
-              })}
+
+                  {/* Clear All Trips with Confirmation */}
+                  {confirmClearOpen ? (
+                    <div style={{
+                      marginTop: '12px',
+                      padding: '12px',
+                      background: '#FEF2F2',
+                      border: '1px solid #FECACA',
+                      borderRadius: '8px',
+                      textAlign: 'center'
+                    }}>
+                      <p style={{ fontSize: '0.84rem', color: '#991B1B', fontWeight: 600, marginBottom: '8px' }}>
+                        Remove all {savedTrips.length} saved trips from your itinerary?
+                      </p>
+                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                        <button
+                          type="button"
+                          className="btn-outline-action"
+                          style={{ padding: '6px 12px', fontSize: '0.8rem' }}
+                          onClick={() => setConfirmClearOpen(false)}
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          id="btn-confirm-clear-dashboard"
+                          type="button"
+                          style={{
+                            padding: '6px 14px',
+                            fontSize: '0.8rem',
+                            background: '#EF4444',
+                            color: '#FFF',
+                            border: 'none',
+                            borderRadius: '6px',
+                            fontWeight: 700,
+                            cursor: 'pointer'
+                          }}
+                          onClick={() => {
+                            if (onClearAllTrips) onClearAllTrips();
+                            setConfirmClearOpen(false);
+                          }}
+                        >
+                          Yes, Clear All
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      id="btn-clear-all-dashboard-modal"
+                      type="button"
+                      className="btn-outline-action"
+                      style={{
+                        width: '100%',
+                        marginTop: '10px',
+                        color: '#EF4444',
+                        borderColor: '#FCA5A5',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                      onClick={() => setConfirmClearOpen(true)}
+                    >
+                      <Trash2 size={15} />
+                      <span>Clear All Saved Trips</span>
+                    </button>
+                  )}
+                </>
+              )}
 
               <div className="placeholder-badge" style={{ marginTop: '16px' }}>
                 Detailed itinerary editing and day-by-day maps will be built in the Itinerary Planner screen.

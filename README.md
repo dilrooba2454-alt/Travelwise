@@ -7,8 +7,9 @@ Welcome to **TravelWise**, your all-in-one travel planning application! This rep
 - **Screen 4**: Dedicated **Hotels & Stays Search Results** view featuring search parameter summary, dynamic destination/type/rating/price filters, sorting options, sample accommodation cards for Kerala, details modal with estimated stay price calculation, and prototype itinerary stay selection.
 - **Screen 5**: Dedicated **Transport Options & Transit Results** view featuring route selection (origin & destination), travel date and passenger counts, mode filters (Trains, Buses, Cabs/Taxis, Ferries), maximum estimated fare slider, sorting options (lowest fare, shortest duration, earliest departure), journey timeline cards, stay details modal with calculated total fares, and direct selection into the prototype My Trips itinerary.
 - **Screen 6**: Dedicated **Tickets, Tours & Activities** view featuring destination and category filters (Cultural Performance, Plantation Tour, Backwater Cruise, Wildlife Experience, Sightseeing), maximum price slider, sorting by lowest price, rich attraction cards with local photography and duration tags, activity details modal, and direct booking into the prototype My Trips state.
-- **Screen 7**: Dedicated **My Trip Planner & Itinerary** view featuring chronological day-by-day scheduling of all saved stays, transport rides, and activities, real-time total budget & category breakdown calculations, item removal actions updating shared state immediately, engaging empty states, and quick exploration shortcuts.
+- **Screen 7**: Dedicated **My Trip Planner & Itinerary** view featuring chronological day-by-day scheduling of all saved stays, transport rides, and activities, real-time total budget & category breakdown calculations, item removal actions updating shared state immediately, engaging empty states, Clear All Trips confirmation modal, and quick exploration shortcuts.
 - **Screen 8**: Dedicated **AI Travel Assistant** interface ("Aria") featuring interactive prompt suggestions ("Plan a 3-day Munnar trip under ₹8,000", "Suggest a family trip in Kerala", "How can I travel on a low budget?"), budget- and duration-aware customized suggestions, rich recommended item cards with "Add to My Trips" actions, simulated typing indicator, and transparent demo-data disclaimers without requiring external API keys.
+- **Phase 3 Persistence**: Complete client-side browser **localStorage** data persistence keeping Screen 3 (Dashboard My Trips), Screen 7 (Trip Planner), and Screen 8 (Aria) synchronized in real-time, preventing demo item duplication on refresh, supporting graceful error handling, and providing confirmed "Clear All Trips" capabilities.
 
 ---
 
@@ -38,8 +39,9 @@ Travel/
 │   │   ├── TripPlannerScreen.jsx    # Screen 7: My Trip Planner & Itinerary
 │   │   └── TravelAssistantScreen.jsx # Screen 8: AI Travel Assistant Chat Interface
 │   ├── services/
-│   │   └── api.js           # Centralized API service with offline fallback
-│   ├── App.jsx              # Main app router / screen state coordinator
+│   │   ├── api.js           # Centralized backend API service with offline fallback
+│   │   └── storage.js       # Phase 3 browser localStorage persistence engine
+│   ├── App.jsx              # Main app router / shared state coordinator
 │   ├── main.jsx             # React DOM mounting entrypoint
 │   └── styles.css           # TravelWise design system, tokens, and animations
 ├── .env                     # Local frontend environment variables (VITE_API_URL)
@@ -52,11 +54,33 @@ Travel/
 
 ---
 
+## 💾 Phase 3 Data Persistence Architecture
+
+The persistence layer is managed cleanly in [`src/services/storage.js`](file:///c:/Users/ashfi_/Desktop/Travel/src/services/storage.js):
+
+1. **Storage Keys**:
+   - `travelwise_saved_trips`: Stores the JSON array of saved hotels, transport rides, and activities.
+   - `travelwise_trips_initialized`: Tracks whether the user has interacted with the app.
+2. **First-Visit vs. Refresh Guarantee**:
+   - On the very first visit, initial sample bookings are loaded and persisted to storage.
+   - On subsequent visits or page refreshes, items are loaded from `localStorage`.
+   - If the user clears all items (`[]`) or removes individual items, their modifications are preserved — default demo items will **never** overwrite user changes or re-appear after being deleted.
+3. **Data Sanitization & Security**:
+   - Trips are validated on load and save to strip out corrupt or invalid properties.
+   - **Zero Secrets**: Passwords, auth credentials, and API keys are strictly never written to `localStorage`.
+4. **Multi-Tab Real-Time Synchronization**:
+   - `window.addEventListener('storage', ...)` ensures that adding, removing, or clearing items in one browser tab immediately reflects across all other open tabs without a manual reload.
+5. **Fault Tolerance**:
+   - Wrapped in full `try...catch` blocks to gracefully handle disabled storage, private browsing restrictions, or quota limits without application crashes.
+
+---
+
 ## 🛠️ Technologies Used
 
 ### Frontend
 - **React (v18)**: Component-driven UI framework with responsive state management across all 8 screens.
 - **Vite (v6)**: Blazing-fast development server and build tool running at [http://localhost:5173](http://localhost:5173).
+- **Web Storage API (localStorage)**: Zero external databases required; fast and private client-side persistence.
 - **CSS (Vanilla)**: Scoped design system featuring primary blue `#0866F5`, dark navy `#102A56`, soft borders `#E1EDFC`, rounded cards, journey timeline connectors, day-by-day itinerary groups, chat bubbles, pulsing typing indicators, and keyframe animations.
 - **Lucide React**: Clean icons (`Plane`, `Home`, `Compass`, `MapPin`, `Calendar`, `Users`, `Search`, `Hotel`, `Ticket`, `Bus`, `Train`, `Car`, `Ship`, `Clock`, `Star`, `ShieldAlert`, `Sparkles`, `User`, `LogOut`, `Menu`, `X`, `SlidersHorizontal`, `ArrowLeft`, `Navigation`, `Tag`, `Trash2`, `Share2`, `Send`, `Bot`, `RefreshCw`, `DollarSign`).
 
@@ -88,38 +112,49 @@ npm run dev
 
 ---
 
-## 🧪 Testing Screen 8 (AI Travel Assistant) in Your Browser
+## 🧪 Step-by-Step Manual Testing for Data Persistence
 
-1. **Access Screen 8**:
-   - Open [http://localhost:5173](http://localhost:5173).
-   - On Screen 1 (Splash), click **Continue as Guest** (or log in via Screen 2) to enter Screen 3 (Dashboard).
-   - **Method A**: In the top navbar, click **AI Assistant** (with the blue Sparkles icon).
-   - **Method B**: On the Dashboard, click the **AI Assistant feature banner** under the service cards ("Need custom trip ideas or budget planning? [Ask AI Assistant]").
-   - **Method C**: In the footer, click **Screen 8 (AI Travel Assistant)**.
-   - **Method D**: From Screen 7 (Trip Planner), click **Ask AI Concierge** in the header or sidebar shortcuts.
+Follow these steps in your browser to verify that Phase 3 localStorage persistence works reliably:
 
-2. **Test Suggested Prompts**:
-   - Click the prompt pill: **"Plan a 3-day Munnar trip under ₹8,000"**.
-   - Notice the realistic simulated typing indicator: *"Aria is researching Kerala routes & calculating budgets..."*.
-   - Review Aria's response:
-     - Detailed Day 1, Day 2, Day 3 schedule.
-     - Transparent budget breakdown (Transport: ₹640, Accommodation: ~₹4,500, Activities: ₹1,800, Food: ~₹900 = Total: ₹7,840 within ₹8,000 budget!).
-     - Curated item cards for Tea Valley Resort, KSRTC SWIFT bus, and Lockhart Tea Estate Tour.
+### Test 1: Verify Initial Persistence
+1. Open [http://localhost:5173](http://localhost:5173).
+2. Click **Continue as Guest** to enter Screen 3 (Dashboard).
+3. Notice the top navbar **My Trips** counter shows **3**.
+4. Open your browser Developer Tools (**F12** → **Application** tab → **Local Storage** → `http://localhost:5173`):
+   - You will see `travelwise_saved_trips` containing the 3 initial demo bookings.
+   - You will see `travelwise_trips_initialized` set to `"true"`.
 
-3. **Test Adding Suggestions to Shared Itinerary**:
-   - In Aria's recommendation cards, click **Add to My Trips** on any hotel, transport, or activity.
-   - The button instantly transforms to **Added to Trip ✓** with a green checkmark and toast notification.
-   - Notice the top header counter **My Trip Planner (N items)** immediately increments!
+### Test 2: Add New Bookings & Refresh
+1. On Screen 3 (Dashboard), click **Hotels & Stays** to open Screen 4.
+2. Select any hotel (e.g. *Grand Vembanad Luxury Houseboat*) and click **Book Stay (Prototype)**.
+3. Return to Dashboard: notice the navbar counter is now **4**.
+4. Press **F5 (Refresh)** in your browser:
+   - Notice the count remains **4**.
+   - Open **My Trips**: the newly added houseboat is still there with all dates and pricing intact!
 
-4. **Test Other Predefined Planning Questions**:
-   - Click **"Suggest a family trip in Kerala"** to view family-friendly recommendations (Kochi dance demo, chauffeur SUV, luxury houseboat).
-   - Click **"How can I travel on a low budget?"** to view insider backpacker savings tips (public ferries, SWIFT buses, homestays).
-   - Type your own query into the chat input (e.g. *"Suggest best romantic trip in Alleppey"*) and press **Enter** or click **Send**.
+### Test 3: Remove an Individual Item
+1. Open Screen 7 (**My Trip Planner**).
+2. Click the red **Remove** button on any itinerary card.
+3. Notice the item disappears immediately, the item count drops to **3**, and the **Total Estimated Budget** updates instantaneously.
+4. Press **F5 (Refresh)** in your browser:
+   - The removed item is **not** restored and demo data does **not** duplicate. The count remains **3**.
 
-5. **Verify Cross-Screen Consistency (Screen 8 ↔ Screen 7 & 3)**:
-   - Click **My Trip Planner** in the top-right header to navigate directly to Screen 7.
-   - Notice the items you added via the AI Assistant appear immediately in the day-by-day schedule and are included in the **Estimated Trip Cost** calculation!
-   - Click **Back to Dashboard**, open **My Trips**, and verify the items are reflected there as well.
+### Test 4: Clear All Trips (Confirmation Step)
+1. On Screen 7, click the red **Clear All** button in the top action bar.
+2. A confirmation modal will appear: *"Are you sure you want to remove all saved bookings?"*.
+3. Click **Cancel**: your itinerary remains safe and untouched.
+4. Click **Clear All** again, then click **Yes, Clear All Trips**:
+   - All items are removed immediately.
+   - The empty state card is displayed.
+   - Both Screen 7 and Dashboard My Trips navbar counter display **0**.
+5. Press **F5 (Refresh)** in your browser:
+   - The empty state persists! Demo items will **not** be re-seeded because user action took precedence.
+
+### Test 5: Multi-Tab Synchronization
+1. Open [http://localhost:5173](http://localhost:5173) in two side-by-side browser tabs.
+2. In Tab 1, navigate to Screen 8 (Aria AI Assistant) and add a suggested activity to your trips.
+3. Without refreshing, switch to Tab 2:
+   - Notice the **My Trips** counter in Tab 2 updates in real-time thanks to the storage synchronization listener!
 
 ---
 
@@ -127,10 +162,10 @@ npm run dev
 
 Both `npm run build` and `npm run test:api` have been tested and verified:
 ```text
-✓ 1581 modules transformed.
+✓ 1582 modules transformed.
 dist/index.html                   1.20 kB │ gzip:  0.71 kB
-dist/assets/index-E6e1f1MU.css   86.75 kB │ gzip: 13.43 kB
-dist/assets/index-Bv9p079J.js   304.07 kB │ gzip: 83.97 kB
-✓ built in 2.53s
+dist/assets/index-BrO49p3U.css   87.15 kB │ gzip: 13.48 kB
+dist/assets/index-C3RmG04Z.js   311.04 kB │ gzip: 86.01 kB
+✓ built in 4.05s
 ```
 Backend health and configuration endpoints are running and 100% active.

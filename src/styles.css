@@ -6152,3 +6152,32 @@ html, body {
   }
 }
 
+/* ==========================================================================
+   Phase 3: Data Persistence & Destructive Modal Styles
+   ========================================================================== */
+
+.btn-modal-danger {
+  flex: 1.5;
+  padding: 12px 18px;
+  background: var(--danger-red);
+  color: #FFFFFF;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.25);
+}
+
+.btn-modal-danger:hover {
+  background: #DC2626;
+  box-shadow: 0 6px 16px rgba(220, 38, 38, 0.35);
+  transform: translateY(-1px);
+}
+
+
