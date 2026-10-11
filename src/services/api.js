@@ -4,8 +4,12 @@
  * with graceful fallback if the backend is offline.
  */
 
-// Read backend URL from Vite environment variable (default: http://localhost:5000)
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+// Read backend URL from Vite environment variable
+// In local development on localhost, defaults to 'http://localhost:5000'
+// In production deployment (e.g. Vercel), defaults to '' so serverless /api endpoints are called on the same origin
+export const API_BASE_URL = import.meta.env.VITE_API_URL !== undefined
+  ? import.meta.env.VITE_API_URL
+  : (typeof window !== 'undefined' && window.location.hostname === 'localhost' ? 'http://localhost:5000' : '');
 
 // Sensible default fallback configuration when backend is offline
 export const DEFAULT_APP_CONFIG = {
